@@ -1,5 +1,5 @@
 name: Leitor Francês Contextual
-version: "1.0.2"
+version: "1.0.3"
 slug: leitor_frances
 description: Leitor EPUB francês com tradução contextual local para português.
 url: "https://github.com/reilouco/EPUB-Frances"
