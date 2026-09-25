@@ -16,7 +16,7 @@ COPY requirements.txt /app/requirements.txt
 RUN /opt/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
 
 # Os arquivos da aplicação estão em rootfs/app no repositório
-COPY rootfs/app/ /app/app/
+COPY rootfs/app/ /app/
 
 COPY run.sh /run.sh
 
