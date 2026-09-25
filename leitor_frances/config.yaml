@@ -1,0 +1,35 @@
+name: Leitor Francês Contextual
+version: "1.0.0"
+slug: leitor_frances
+description: Leitor EPUB francês com tradução contextual local para português.
+url: "https://github.com/reilouco/EPUB-Frances"
+arch:
+  - amd64
+
+startup: application
+boot: auto
+init: false
+
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+
+auth_api: true
+homeassistant_api: true
+
+panel_icon: mdi:book-open-page-variant
+panel_title: Leitor Francês
+
+map:
+  - share:rw
+
+ports:
+  8099/tcp: null
+
+options:
+  max_upload_mb: 50
+  mostrar_contexto_por_padrao: false
+
+schema:
+  max_upload_mb: "int(5,200)"
+  mostrar_contexto_por_padrao: bool

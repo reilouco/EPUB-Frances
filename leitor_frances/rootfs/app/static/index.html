@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Leitor Francês</title>
+  <link rel="stylesheet" href="./static/style.css" />
+</head>
+
+<body>
+  <header class="topbar">
+    <button id="btn-home" class="icon-button" title="Biblioteca">☰</button>
+
+    <div class="topbar-title">
+      <strong id="book-title">Leitor Francês</strong>
+      <small id="book-subtitle">Biblioteca</small>
+    </div>
+
+    <button id="btn-phrases" class="icon-button" title="Expressões salvas">★</button>
+  </header>
+
+  <main>
+    <section id="library-view" class="view active">
+      <div class="hero">
+        <h1>Biblioteca</h1>
+        <p>Leia em francês, compreenda expressões e salve seu progresso.</p>
+
+        <label class="upload-button">
+          <input id="epub-upload" type="file" accept=".epub,application/epub+zip" />
+          ＋ Adicionar EPUB
+        </label>
+      </div>
+
+      <div id="upload-status" class="status"></div>
+      <div id="book-list" class="book-list"></div>
+    </section>
+
+    <section id="reader-view" class="view">
+      <div class="reader-toolbar">
+        <select id="chapter-select"></select>
+
+        <div class="progress-wrap">
+          <div class="progress-bar">
+            <div id="progress-fill"></div>
+          </div>
+          <small id="progress-label">0%</small>
+        </div>
+      </div>
+
+      <article id="reader-content" class="reader-content"></article>
+
+      <div class="reader-navigation">
+        <button id="prev-chapter">← Capítulo anterior</button>
+        <button id="next-chapter">Próximo capítulo →</button>
+      </div>
+    </section>
+
+    <section id="phrases-view" class="view">
+      <div class="section-heading">
+        <div>
+          <h1>Expressões salvas</h1>
+          <p>Seu repertório pessoal de francês.</p>
+        </div>
+        <button id="btn-close-phrases" class="icon-button">×</button>
+      </div>
+
+      <div id="phrase-list" class="phrase-list"></div>
+    </section>
+  </main>
+
+  <aside id="translation-panel" class="translation-panel hidden">
+    <div class="panel-head">
+      <strong>Expressão selecionada</strong>
+      <button id="close-panel" class="icon-button">×</button>
+    </div>
+
+    <p id="selected-expression" class="selected-expression"></p>
+
+    <div class="expression-controls">
+      <button id="remove-word">− palavra</button>
+      <button id="add-word">+ palavra</button>
+    </div>
+
+    <button id="translate-button" class="primary-button">
+      Traduzir localmente
+    </button>
+
+    <label class="context-toggle">
+      <input id="context-toggle" type="checkbox" />
+      Traduzir também a frase de contexto
+    </label>
+
+    <div id="translation-result" class="translation-result"></div>
+
+    <button id="save-phrase-button" class="secondary-button" disabled>
+      ★ Salvar cartão
+    </button>
+  </aside>
+
+  <div id="overlay" class="overlay hidden"></div>
+
+  <script src="./static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+EbookLib==0.18
+beautifulsoup4==4.12.3
+bleach==6.2.0
+argostranslate==1.9.6
