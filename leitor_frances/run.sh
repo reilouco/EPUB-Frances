@@ -19,7 +19,7 @@ bashio::log.info "Livros e dados persistentes: /data"
 cd /app
 
 # Usa o Python do ambiente virtual criado no Dockerfile.
-exec /opt/venv/bin/python -m uvicorn app:app \
+exec python3 -m uvicorn app:app \
   --host 0.0.0.0 \
   --port 8099 \
   --proxy-headers \
