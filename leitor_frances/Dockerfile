@@ -1,30 +1,30 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM ghcr.io/home-assistant/base:latest
 
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    py3-lxml \
-    build-base \
-    libffi-dev \
-    python3-dev \
-    linux-headers
+    sqlite \
+    unzip \
+    curl \
+    tesseract-ocr \
+    tesseract-ocr-data-fra \
+    && python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip
+
+ENV PATH="/opt/venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
 
-RUN pip3 install --no-cache-dir --break-system-packages \
-    -r /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY build_argos_model.py /app/build_argos_model.py
+COPY app /app/app
+COPY run.sh /run.sh
 
-# O modelo é baixado uma única vez durante o build.
-# Depois disso, a tradução funciona localmente e offline.
-RUN python3 /app/build_argos_model.py
+RUN chmod a+x /run.sh \
+    && mkdir -p /data/books /data/covers /data/models
 
-COPY rootfs/app /app
-
-RUN chmod +x /app/run.sh
-
-CMD ["/app/run.sh"]
+CMD ["/run.sh"]
