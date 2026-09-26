@@ -13,3 +13,10 @@ if not install("fr", "pt"):
     if not (install("fr", "en") and install("en", "pt")):
         raise RuntimeError("Modelos fr→pt (ou fr→en→pt) não encontrados.")
 print("Modelos instalados.")
+
+# Baixa o modelo e a voz francesa na hora do build, para funcionar offline
+from kokoro import KPipeline
+pipe = KPipeline(lang_code="f", repo_id="hexgrad/Kokoro-82M")
+for _ in pipe("Bonjour.", voice="ff_siwis"):
+    pass
+print("Kokoro pronto.")
