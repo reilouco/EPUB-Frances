@@ -1,27 +1,30 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.20
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
 FROM ${BUILD_FROM}
 
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 WORKDIR /app
-
-RUN apk add --no-cache \
-    sqlite \
-    unzip \
-    curl \
-    libstdc++ \
-    libgomp \
-    && python3 -m pip install --no-cache-dir --upgrade pip
-
 COPY requirements.txt /app/requirements.txt
 
-RUN python3 -m pip install --no-cache-dir -r /app/requirements.txt
+# torch CPU-only (evita baixar vários GB de CUDA)
+RUN pip install --extra-index-url https://download.pytorch.org/whl/cpu \
+      torch && \
+    pip install -r /app/requirements.txt
 
-# A aplicação está em rootfs/app/
-COPY rootfs/app/ /app/
+COPY build_argos_model.py /app/build_argos_model.py
+RUN python /app/build_argos_model.py
 
+COPY rootfs/app /app
 COPY run.sh /run.sh
-
 RUN chmod a+x /run.sh
-
-ENV PYTHONUNBUFFERED=1
 
 CMD ["/run.sh"]
