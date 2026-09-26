@@ -5,11 +5,12 @@ const state = {
   selectedWords: [],
   selectedContext: "",
   translation: null,
-  marks: { difficulty: {}, saved: new Set() },
+  marks: { difficulty: {}, saved: new Set(), notes: {} },
   trCache: new Map(),
   trSeq: 0,
   trTimer: null,
   saveTimer: null,
+  noteTimer: null,
 };
 
 const $ = (s) => document.querySelector(s);
@@ -47,6 +48,16 @@ function escapeHtml(value) {
 const normWord = (w) =>
   w.toLowerCase().replace(/’/g, "'").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
 const phraseKey = (t) => t.split(/\s+/).map(normWord).filter(Boolean).join(" ");
+
+/* ---------- TTS ---------- */
+const player = new Audio();
+function speak(text, slow = false) {
+  if (!text) return;
+  player.pause();
+  player.src = `./api/tts?text=${encodeURIComponent(text)}&slow=${slow ? 1 : 0}`;
+  player.play().catch(() => {});
+}
+player.onerror = () => alert("Não foi possível gerar o áudio (edge-tts e Kokoro falharam).");
 
 /* ---------- Biblioteca ---------- */
 function hue(text) {
@@ -139,7 +150,7 @@ async function openBook(bookId) {
 
 async function loadMarks() {
   const m = await api("./api/marks");
-  state.marks = { difficulty: m.difficulty, saved: new Set(m.saved) };
+  state.marks = { difficulty: m.difficulty, saved: new Set(m.saved), notes: m.notes || {} };
 }
 
 function decorateWords() {
@@ -237,6 +248,8 @@ function updateSelectionUI() {
   document.querySelectorAll(".word.selected").forEach((w) => w.classList.remove("selected"));
   state.selectedWords.forEach((w) => w.classList.add("selected"));
   $("#selected-expression").textContent = selectedText();
+  $("#note-input").value = state.marks.notes[selectedKey()] || "";
+  closeEdit();
   updatePanelState();
   scheduleTranslate();
 }
@@ -317,14 +330,75 @@ function scheduleTranslate() {
 
 function renderTranslation(t) {
   state.translation = t;
-  let html = `<div class="translation">${escapeHtml(t.translation_pt)}</div>`;
+  let html = `<div class="translation ${t.is_custom ? "custom" : ""}">
+      <span>${escapeHtml(t.translation_pt)}</span>
+      <button class="tr-edit" title="Corrigir tradução">✏️</button>
+    </div>`;
+  if (t.is_custom) {
+    html += `<div class="custom-row"><small>✎ Tradução corrigida</small>
+      <button class="tr-restore">↺ Restaurar automática</button></div>`;
+  }
   if (t.context_pt) {
     html += `<details><summary>Ver contexto traduzido</summary>
       <p><strong>FR:</strong> ${escapeHtml(t.context_fr)}</p>
       <p><strong>PT:</strong> ${escapeHtml(t.context_pt)}</p></details>`;
   }
   $("#translation-result").innerHTML = html;
+  $("#translation-result .tr-edit").onclick = openEdit;
+  const r = $("#translation-result .tr-restore");
+  if (r) r.onclick = restoreTranslation;
   updatePanelState();
+}
+
+/* ---------- Correção de tradução ---------- */
+function openEdit() {
+  if (!state.translation) return;
+  $("#translation-input").value = state.translation.translation_pt;
+  $("#translation-edit").classList.remove("hidden");
+  $("#translation-input").focus();
+}
+
+const closeEdit = () => $("#translation-edit").classList.add("hidden");
+
+async function saveCorrection() {
+  const text = $("#translation-input").value.trim();
+  if (!text || !state.translation) return;
+  try {
+    await api("./api/translations", {
+      method: "POST",
+      body: formData({ phrase_fr: state.translation.phrase_fr, translation_pt: text }),
+    });
+    state.trCache.clear();
+    closeEdit();
+    scheduleTranslate();
+  } catch (e) { alert(e.message); }
+}
+
+async function restoreTranslation() {
+  if (!state.translation) return;
+  if (!confirm("Voltar à tradução automática? Cartões salvos também voltarão.")) return;
+  try {
+    await api("./api/translations/restore", {
+      method: "POST",
+      body: formData({ phrase_fr: state.translation.phrase_fr }),
+    });
+    state.trCache.clear();
+    scheduleTranslate();
+  } catch (e) { alert(e.message); }
+}
+
+/* ---------- Notas ---------- */
+function onNoteInput() {
+  const key = selectedKey();
+  const notes = $("#note-input").value;
+  if (notes.trim()) state.marks.notes[key] = notes;
+  else delete state.marks.notes[key];
+  if (!state.marks.saved.has(key)) return; // será enviada junto com o cartão
+  clearTimeout(state.noteTimer);
+  const phrase = selectedText();
+  state.noteTimer = setTimeout(() =>
+    api("./api/phrases/note", { method: "POST", body: formData({ phrase_fr: phrase, notes }) })
+      .catch((e) => console.error(e)), 600);
 }
 
 /* ---------- Dificuldade e cartões ---------- */
@@ -347,26 +421,31 @@ async function toggleSaved() {
   const key = selectedKey();
   if (!key || !state.book) return;
 
-  if (state.marks.saved.has(key)) {
-    await api("./api/phrases/unsave", { method: "POST", body: formData({ phrase_fr: selectedText() }) });
-    state.marks.saved.delete(key);
-  } else {
-    if (!state.translation) return;
-    await api("./api/phrases", {
-      method: "POST",
-      body: formData({
-        book_id: state.book.id,
-        chapter_index: state.chapterIndex,
-        phrase_fr: state.translation.phrase_fr,
-        translation_pt: state.translation.translation_pt,
-        context_fr: state.translation.context_fr || "",
-        context_pt: state.translation.context_pt || "",
-      }),
-    });
-    state.marks.saved.add(key);
-  }
-  applyMarks();
-  updatePanelState();
+  try {
+    if (state.marks.saved.has(key)) {
+      await api("./api/phrases/unsave", { method: "POST", body: formData({ phrase_fr: selectedText() }) });
+      state.marks.saved.delete(key);
+      delete state.marks.notes[key];
+      $("#note-input").value = "";
+    } else {
+      if (!state.translation) return;
+      await api("./api/phrases", {
+        method: "POST",
+        body: formData({
+          book_id: state.book.id,
+          chapter_index: state.chapterIndex,
+          phrase_fr: state.translation.phrase_fr,
+          translation_pt: state.translation.translation_pt,
+          context_fr: state.translation.context_fr || "",
+          context_pt: state.translation.context_pt || "",
+          notes: $("#note-input").value,
+        }),
+      });
+      state.marks.saved.add(key);
+    }
+    applyMarks();
+    updatePanelState();
+  } catch (e) { alert(e.message); }
 }
 
 function closePanel() {
@@ -374,6 +453,7 @@ function closePanel() {
   $("#overlay").classList.add("hidden");
   document.querySelectorAll(".word.selected").forEach((w) => w.classList.remove("selected"));
   clearTimeout(state.trTimer);
+  closeEdit();
   state.trSeq++;
   state.selectedWords = [];
   state.translation = null;
@@ -449,14 +529,37 @@ async function showPhrases() {
     list.innerHTML = phrases.map((p) => `
       <article class="phrase-card ${p.difficulty ? `lvl-${p.difficulty}` : ""}">
         <div class="phrase-top">
-          <div class="french">${escapeHtml(p.phrase_fr)}</div>
+          <div class="french">${escapeHtml(p.phrase_fr)}
+            <button class="speak" data-text="${escapeHtml(p.phrase_fr)}" title="Ouvir">🔊</button>
+          </div>
           ${p.difficulty ? `<span class="badge">${LEVEL_LABEL[p.difficulty]}</span>` : ""}
         </div>
         <div class="portuguese">${escapeHtml(p.translation_pt)}</div>
         ${p.context_fr ? `<p><small>Contexto: ${escapeHtml(p.context_fr)}</small></p>` : ""}
         ${p.book_title ? `<p><small>📖 ${escapeHtml(p.book_title)}</small></p>` : ""}
+        <textarea class="note-input card-note" data-fr="${escapeHtml(p.phrase_fr)}" rows="2"
+          placeholder="📝 Adicionar nota…">${escapeHtml(p.notes || "")}</textarea>
         <button class="delete-phrase" data-id="${p.id}">Excluir cartão</button>
       </article>`).join("");
+
+    list.querySelectorAll(".speak").forEach((b) =>
+      b.addEventListener("click", () => speak(b.dataset.text)));
+
+    list.querySelectorAll(".card-note").forEach((ta) => {
+      let t;
+      ta.addEventListener("input", () => {
+        clearTimeout(t);
+        t = setTimeout(async () => {
+          try {
+            await api("./api/phrases/note", {
+              method: "POST",
+              body: formData({ phrase_fr: ta.dataset.fr, notes: ta.value }),
+            });
+            await loadMarks();
+          } catch (e) { console.error(e); }
+        }, 600);
+      });
+    });
 
     list.querySelectorAll(".delete-phrase").forEach((btn) =>
       btn.addEventListener("click", async () => {
@@ -520,7 +623,22 @@ document.querySelectorAll(".diff-btn").forEach((b) =>
 $("#save-phrase-button").addEventListener("click", toggleSaved);
 $("#close-panel").addEventListener("click", closePanel);
 $("#overlay").addEventListener("click", closePanel);
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePanel(); });
+
+// TTS, correção e notas
+$("#tts-play").addEventListener("click", () => speak(selectedText()));
+$("#tts-slow").addEventListener("click", () => speak(selectedText(), true));
+$("#tr-save").addEventListener("click", saveCorrection);
+$("#tr-cancel").addEventListener("click", closeEdit);
+$("#translation-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveCorrection(); }
+});
+$("#note-input").addEventListener("input", onNoteInput);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (!$("#translation-edit").classList.contains("hidden")) closeEdit();
+  else closePanel();
+});
 
 window.addEventListener("scroll", saveProgressSoon, { passive: true });
 window.addEventListener("pagehide", flushProgress);
