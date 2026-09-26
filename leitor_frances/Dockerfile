@@ -17,7 +17,10 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 
 # torch CPU-only (evita baixar vários GB de CUDA)
-RUN pip install --index-url https://download.pytorch.org/whl/cpu torch && \
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install torch \
+      --index-url https://download.pytorch.org/whl/cpu \
+      --extra-index-url https://pypi.org/simple && \
     pip install -r /app/requirements.txt
 
 # Modelo de tradução (Argos)
