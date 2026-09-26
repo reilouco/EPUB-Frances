@@ -5,3 +5,7 @@ EbookLib==0.18
 beautifulsoup4==4.12.3
 bleach==6.2.0
 argostranslate==1.9.6
+edge-tts>=7.0.0
+kokoro>=0.9.4
+soundfile>=0.12.1
+numpy
