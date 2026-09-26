@@ -8,13 +8,19 @@ from functools import lru_cache
 from datetime import datetime, timezone
 from contextlib import contextmanager
 
+import io
+import asyncio
+import hashlib
+import threading
+import edge_tts
+from fastapi.responses import FileResponse, Response
+
 import bleach
 import argostranslate.translate
 from bs4 import BeautifulSoup
 from ebooklib import epub, ITEM_DOCUMENT, ITEM_COVER, ITEM_IMAGE
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 APP_DIR = Path("/app")
@@ -23,6 +29,8 @@ BOOKS_DIR = DATA_DIR / "books"
 COVERS_DIR = DATA_DIR / "covers"
 DB_PATH = DATA_DIR / "leitor_frances.db"
 DIFFICULTIES = {"facil", "medio", "dificil"}
+TTS_DIR = DATA_DIR / "tts_cache"
+TTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_options():
@@ -33,6 +41,8 @@ def load_options():
 
 
 OPTIONS = load_options()
+TTS_ENGINE = str(OPTIONS.get("tts_motor", "auto"))
+EDGE_VOICE = str(OPTIONS.get("tts_voz", "fr-FR-DeniseNeural"))
 
 
 def _int(value, default):
@@ -145,6 +155,15 @@ def init_database():
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_phrases_user_key ON phrases(user_id, phrase_key)"
         )
+        
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS translation_overrides (
+                phrase_key TEXT PRIMARY KEY, phrase_fr TEXT NOT NULL,
+                translation_pt TEXT NOT NULL, updated_by TEXT, updated_at TEXT NOT NULL
+            )""")
+        cols = {r["name"] for r in conn.execute("PRAGMA table_info(phrases)")}
+        if "notes" not in cols:
+            conn.execute("ALTER TABLE phrases ADD COLUMN notes TEXT DEFAULT ''")
 
 
 @app.on_event("startup")
@@ -261,6 +280,11 @@ def translate_local(text: str) -> str:
     except Exception as error:
         raise HTTPException(status_code=503,
                             detail=f"Tradutor local indisponível: {error}")
+
+def get_override(conn, key):
+    r = conn.execute("SELECT translation_pt FROM translation_overrides WHERE phrase_key = ?",
+                     (key,)).fetchone()
+    return r["translation_pt"] if r else None
 
 
 # ---------- Rotas ----------
@@ -446,12 +470,49 @@ def translate(request: Request, phrase_fr: str = Form(...),
     if len(phrase_fr) > 400:
         raise HTTPException(status_code=400, detail="A expressão está longa demais.")
 
+    with db() as conn:
+        custom = get_override(conn, phrase_key(phrase_fr))
+
     context_pt = ""
     if with_context and context_fr and context_fr != phrase_fr:
         context_pt = translate_local(context_fr)
 
-    return {"phrase_fr": phrase_fr, "translation_pt": translate_local(phrase_fr),
+    return {"phrase_fr": phrase_fr,
+            "translation_pt": custom or translate_local(phrase_fr),
+            "is_custom": custom is not None,
             "context_fr": context_fr, "context_pt": context_pt}
+
+
+# ---------- Correções globais de tradução ----------
+@app.post("/api/translations")
+def set_translation(request: Request, phrase_fr: str = Form(...), translation_pt: str = Form(...)):
+    user = current_user(request)
+    key, text = phrase_key(phrase_fr), translation_pt.strip()
+    if not key or not text:
+        raise HTTPException(status_code=400, detail="Expressão ou tradução vazia.")
+    with db() as conn:
+        conn.execute("""
+            INSERT INTO translation_overrides (phrase_key, phrase_fr, translation_pt, updated_by, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(phrase_key) DO UPDATE SET translation_pt = excluded.translation_pt,
+                updated_by = excluded.updated_by, updated_at = excluded.updated_at
+        """, (key, phrase_fr.strip(), text, user["id"], now()))
+        n = conn.execute("UPDATE phrases SET translation_pt = ? WHERE phrase_key = ?",
+                         (text, key)).rowcount
+    return {"ok": True, "cards_updated": n}
+
+
+@app.post("/api/translations/restore")
+def restore_translation(request: Request, phrase_fr: str = Form(...)):
+    current_user(request)
+    key = phrase_key(phrase_fr)
+    auto = translate_local(phrase_fr)
+    with db() as conn:
+        conn.execute("DELETE FROM translation_overrides WHERE phrase_key = ?", (key,))
+        n = conn.execute("UPDATE phrases SET translation_pt = ? WHERE phrase_key = ?",
+                         (auto, key)).rowcount
+    return {"ok": True, "translation_pt": auto, "cards_updated": n}
+
 
 
 # ---------- Marcações (dificuldade + cartões) por usuário ----------
@@ -463,11 +524,11 @@ def get_marks(request: Request):
             "SELECT phrase_key, difficulty FROM phrase_marks WHERE user_id = ?",
             (user["id"],)).fetchall()
         saved = conn.execute(
-            "SELECT DISTINCT phrase_key FROM phrases WHERE user_id = ? AND phrase_key <> ''",
-            (user["id"],)).fetchall()
+            "SELECT phrase_key, COALESCE(notes,'') AS notes FROM phrases "
+            "WHERE user_id = ? AND phrase_key <> ''", (user["id"],)).fetchall()
     return {"difficulty": {r["phrase_key"]: r["difficulty"] for r in diffs},
-            "saved": [r["phrase_key"] for r in saved]}
-
+            "saved": [r["phrase_key"] for r in saved],
+            "notes": {r["phrase_key"]: r["notes"] for r in saved if r["notes"]}}
 
 @app.post("/api/marks")
 def set_mark(request: Request, phrase_fr: str = Form(...), difficulty: str = Form("")):
@@ -507,28 +568,37 @@ def list_phrases(request: Request):
 @app.post("/api/phrases")
 def save_phrase(request: Request, book_id: str = Form(...), chapter_index: int = Form(...),
                 phrase_fr: str = Form(...), translation_pt: str = Form(...),
-                context_fr: str = Form(""), context_pt: str = Form("")):
+                context_fr: str = Form(""), context_pt: str = Form(""), notes: str = Form("")):
     user = current_user(request)
     key = phrase_key(phrase_fr)
     with db() as conn:
+        tr = get_override(conn, key) or translation_pt.strip()  # a correção sempre prevalece
         existing = conn.execute(
             "SELECT id FROM phrases WHERE user_id = ? AND phrase_key = ?",
             (user["id"], key)).fetchone()
         if existing:
-            conn.execute("""
-                UPDATE phrases SET translation_pt = ?, context_fr = ?, context_pt = ?
-                WHERE id = ?
-            """, (translation_pt.strip(), context_fr.strip(), context_pt.strip(), existing["id"]))
+            conn.execute("""UPDATE phrases SET translation_pt = ?, context_fr = ?, context_pt = ?,
+                            notes = ? WHERE id = ?""",
+                         (tr, context_fr.strip(), context_pt.strip(), notes.strip(), existing["id"]))
             return {"id": existing["id"], "ok": True}
 
         phrase_id = str(uuid.uuid4())
         conn.execute("""
             INSERT INTO phrases (id, user_id, book_id, phrase_fr, phrase_key, translation_pt,
-                                 context_fr, context_pt, chapter_index, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (phrase_id, user["id"], book_id, phrase_fr.strip(), key, translation_pt.strip(),
-              context_fr.strip(), context_pt.strip(), chapter_index, now()))
+                                 context_fr, context_pt, chapter_index, created_at, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (phrase_id, user["id"], book_id, phrase_fr.strip(), key, tr,
+              context_fr.strip(), context_pt.strip(), chapter_index, now(), notes.strip()))
     return {"id": phrase_id, "ok": True}
+
+
+@app.post("/api/phrases/note")
+def save_note(request: Request, phrase_fr: str = Form(...), notes: str = Form("")):
+    user = current_user(request)
+    with db() as conn:
+        n = conn.execute("UPDATE phrases SET notes = ? WHERE user_id = ? AND phrase_key = ?",
+                         (notes.strip(), user["id"], phrase_key(phrase_fr))).rowcount
+    return {"ok": True, "updated": n}
 
 
 @app.post("/api/phrases/unsave")
@@ -565,3 +635,60 @@ def delete_book(book_id: str, request: Request):
     for f in COVERS_DIR.glob(f"{book_id}.*"):
         f.unlink(missing_ok=True)
     return {"ok": True}
+
+
+_kokoro = None
+_klock = threading.Lock()
+
+
+def _kokoro_wav(text: str, slow: bool) -> bytes:
+    global _kokoro
+    import numpy as np
+    import soundfile as sf
+    with _klock:  # carrega o modelo só quando for preciso e evita gerar dois áudios ao mesmo tempo
+        if _kokoro is None:
+            from kokoro import KPipeline
+            _kokoro = KPipeline(lang_code="f", repo_id="hexgrad/Kokoro-82M")
+        parts = [a for _, _, a in _kokoro(text, voice="ff_siwis", speed=0.75 if slow else 1.0)]
+    if not parts:
+        raise RuntimeError("Kokoro não gerou áudio.")
+    audio = np.concatenate([p.numpy() if hasattr(p, "numpy") else p for p in parts])
+    buf = io.BytesIO()
+    sf.write(buf, audio, 24000, format="WAV")
+    return buf.getvalue()
+
+
+async def _edge_mp3(text: str, slow: bool) -> bytes:
+    com = edge_tts.Communicate(text, EDGE_VOICE, rate="-30%" if slow else "+0%")
+    out = bytearray()
+    async for chunk in com.stream():
+        if chunk["type"] == "audio":
+            out += chunk["data"]
+    if not out:
+        raise RuntimeError("edge-tts retornou áudio vazio.")
+    return bytes(out)
+
+
+@app.get("/api/tts")
+async def tts(request: Request, text: str, slow: int = 0):
+    text = re.sub(r"\s+", " ", text).strip()[:600]
+    if not text:
+        raise HTTPException(status_code=400, detail="Texto vazio.")
+    engines = {"edge": ["edge"], "kokoro": ["kokoro"]}.get(TTS_ENGINE, ["edge", "kokoro"])
+    errors = []
+    for eng in engines:
+        ext, media = (".mp3", "audio/mpeg") if eng == "edge" else (".wav", "audio/wav")
+        h = hashlib.sha1(f"{eng}|{EDGE_VOICE}|{slow}|{text}".encode()).hexdigest()
+        path = TTS_DIR / f"{h}{ext}"
+        if not path.is_file():
+            try:
+                data = (await asyncio.wait_for(_edge_mp3(text, bool(slow)), 8) if eng == "edge"
+                        else await asyncio.to_thread(_kokoro_wav, text, bool(slow)))
+                path.write_bytes(data)
+            except Exception as e:
+                errors.append(f"{eng}: {e}")
+                continue
+        return Response(path.read_bytes(), media_type=media,
+                        headers={"Cache-Control": "public, max-age=604800", "X-TTS-Engine": eng})
+    raise HTTPException(status_code=503, detail="TTS indisponível — " + " | ".join(errors))
+
