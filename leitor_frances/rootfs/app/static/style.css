@@ -442,3 +442,27 @@
 .phrase-card.lvl-dificil { border-left: 4px solid #ff7b7b; }
 .phrase-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
 .badge { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--card-2); color: var(--muted); }
+
+
+.expr-row { display: flex; align-items: center; gap: 4px; }
+.expr-row .selected-expression { flex: 1; }
+
+.translation-result .translation { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.translation-result .translation.custom { border-left: 3px solid #ffd54f; }
+.tr-edit, .speak { background: transparent; border: 0; opacity: .6; font-size: 16px; }
+.tr-edit:hover, .speak:hover { opacity: 1; }
+.custom-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; color: #ffd54f; }
+.tr-restore { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 4px 8px; }
+
+.translation-edit { margin-top: 10px; display: grid; gap: 8px; }
+.translation-edit.hidden { display: none; }
+.translation-edit small { color: var(--muted); }
+.edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.edit-actions button:first-child { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 9px; padding: 10px; }
+
+.note-input, #translation-input {
+  width: 100%; margin-top: 12px; padding: 10px; resize: vertical;
+  color: var(--text); background: #0f161b; border: 1px solid var(--border); border-radius: 10px;
+  font: inherit; font-size: 15px;
+}
+.note-input:focus, #translation-input:focus { outline: none; border-color: var(--accent); }
