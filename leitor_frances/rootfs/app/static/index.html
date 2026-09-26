@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Leitor Francês</title>
-  <link rel="stylesheet" href="./static/style.css?v=1.1.1" />
+  <link rel="stylesheet" href="./static/style.css?v=1.2.0" />
 </head>
 <body>
   <header class="topbar">
@@ -63,7 +63,12 @@
       <button id="close-panel" class="icon-button">×</button>
     </div>
 
-    <p id="selected-expression" class="selected-expression"></p>
+    <div class="expr-row">
+      <p id="selected-expression" class="selected-expression"></p>
+      <button id="tts-play" class="icon-button" title="Ouvir em francês">🔊</button>
+      <button id="tts-slow" class="icon-button" title="Ouvir devagar">🐢</button>
+    </div>
+
 
     <div class="expression-controls">
       <button id="remove-word">− palavra</button>
@@ -77,16 +82,30 @@
 
     <div id="translation-result" class="translation-result"></div>
 
+    <div id="translation-edit" class="translation-edit hidden">
+      <textarea id="translation-input" rows="2"></textarea>
+      <small>A correção vale para todos da casa e atualiza os cartões salvos.</small>
+      <div class="edit-actions">
+        <button id="tr-cancel">Cancelar</button>
+        <button id="tr-save" class="primary-button">Salvar correção</button>
+      </div>
+    </div>
+
+
     <div class="difficulty-row">
       <button class="diff-btn" data-level="facil">Fácil</button>
       <button class="diff-btn" data-level="medio">Médio</button>
       <button class="diff-btn" data-level="dificil">Difícil</button>
     </div>
 
+    <textarea id="note-input" class="note-input" rows="2"
+      placeholder="📝 Nota pessoal (salva junto com o cartão)"></textarea>
+
+
     <button id="save-phrase-button" class="secondary-button" disabled>★ Salvar cartão</button>
   </aside>
 
   <div id="overlay" class="overlay hidden"></div>
-  <script src="./static/app.js?v=1.1.1"></script>
+  <script src="./static/app.js?v=1.2.0"></script>
 </body>
 </html>
