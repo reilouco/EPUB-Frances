@@ -22,8 +22,26 @@ APP_DIR = Path("/app")
 DATA_DIR = Path(os.getenv("APP_DATA_DIR", "/data"))
 BOOKS_DIR = DATA_DIR / "books"
 DB_PATH = DATA_DIR / "leitor_frances.db"
-MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "50"))
-SHOW_CONTEXT_DEFAULT = os.getenv("SHOW_CONTEXT_DEFAULT", "false").lower() == "true"
+
+def load_options():
+    try:
+        return json.loads((DATA_DIR / "options.json").read_text())
+    except Exception:
+        return {}
+
+OPTIONS = load_options()
+
+def _int(value, default):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+MAX_UPLOAD_MB = _int(OPTIONS.get("max_upload_mb", os.getenv("MAX_UPLOAD_MB")), 50)
+SHOW_CONTEXT_DEFAULT = str(
+    OPTIONS.get("mostrar_contexto_por_padrao", os.getenv("SHOW_CONTEXT_DEFAULT", "false"))
+).lower() == "true"
+
 
 BOOKS_DIR.mkdir(parents=True, exist_ok=True)
 
