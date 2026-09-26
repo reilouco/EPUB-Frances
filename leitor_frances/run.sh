@@ -1,10 +1,7 @@
-#!/usr/bin/env bashio
+#!/usr/bin/with-contenv bashio
 set -e
 mkdir -p /data/books /data/covers /data/backups
-
 export APP_DATA_DIR="/data"
-export MAX_UPLOAD_MB="$(bashio::config 'max_upload_mb')"
-export SHOW_CONTEXT_DEFAULT="$(bashio::config 'mostrar_contexto_por_padrao')"
 
 bashio::log.info "Iniciando Leitor Francês Contextual..."
 cd /app
