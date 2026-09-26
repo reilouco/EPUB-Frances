@@ -138,57 +138,7 @@
     color: var(--muted);
     min-height: 24px;
     margin: 12px 0;
-  }
-  
-  .book-list,
-  .phrase-list {
-    display: grid;
-    gap: 12px;
-  }
-  
-  .book-card,
-  .phrase-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px;
-  }
-  
-  .book-card h2,
-  .phrase-card h2 {
-    margin: 0 0 6px;
-    font-size: 18px;
-  }
-  
-  .book-card p,
-  .phrase-card p {
-    color: var(--muted);
-    margin: 6px 0;
-  }
-  
-  .book-card-footer {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 14px;
-  }
-  
-  .book-card-footer button {
-    border: 0;
-    border-radius: 8px;
-    padding: 9px 11px;
-    color: white;
-    background: var(--accent-dark);
-  }
-  
-  .book-card-footer .delete-book {
-    background: transparent;
-    color: var(--danger);
-  }
-  
-  .book-progress {
-    flex: 1;
-  }
+  }   
   
   .progress-bar {
     width: 100%;
@@ -260,11 +210,6 @@
   .word {
     border-radius: 4px;
     cursor: pointer;
-  }
-  
-  .word:hover,
-  .word.seen {
-    background: rgba(77, 182, 172, 0.2);
   }
   
   .word.selected {
@@ -379,4 +324,121 @@
       left: auto;
       border-radius: 18px;
     }
-  }  
+  } 
+
+/* ---------- Biblioteca com capas ---------- */
+.phrase-list { display: grid; gap: 12px; }
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 22px 18px;
+}
+
+.book-card { display: flex; flex-direction: column; gap: 8px; }
+
+.cover {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px 12px 12px 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--card);
+  box-shadow: inset 6px 0 10px -6px rgba(0,0,0,.6), 0 10px 24px rgba(0,0,0,.45);
+  transition: transform .25s, box-shadow .25s;
+}
+.cover:hover { transform: translateY(-4px) rotate(-.6deg); box-shadow: 0 16px 34px rgba(0,0,0,.55); }
+.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.cover-placeholder {
+  height: 100%;
+  padding: 18px 14px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: linear-gradient(160deg, hsl(var(--h) 45% 32%), hsl(calc(var(--h) + 40) 50% 14%));
+  font-family: Georgia, serif;
+}
+.cover-placeholder span { font-size: 17px; line-height: 1.25; font-weight: bold; }
+.cover-placeholder small { color: rgba(255,255,255,.7); }
+
+.ring {
+  position: absolute; top: 8px; right: 8px;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--accent) calc(var(--p) * 1%), rgba(255,255,255,.18) 0);
+}
+.ring::before {
+  content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  background: rgba(10,14,18,.88);
+}
+.ring span { position: relative; font-size: 11px; font-weight: bold; }
+
+.cover-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,.5); }
+.cover-progress > div { height: 100%; background: var(--accent); }
+
+.book-meta h2 {
+  margin: 0; font-size: 15px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.book-meta p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+.book-actions { display: flex; gap: 6px; }
+.book-actions .primary {
+  flex: 1; border: 0; border-radius: 8px; padding: 8px;
+  color: #fff; background: var(--accent-dark); font-weight: bold;
+}
+.book-actions .tool {
+  width: 36px; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text);
+}
+.book-actions .tool input { display: none; }
+.book-actions .delete-book:hover { border-color: var(--danger); }
+
+.empty-card {
+  grid-column: 1 / -1; padding: 20px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+}
+
+/* ---------- Palavras e marcações ---------- */
+.word:hover { background: rgba(77,182,172,.2); }
+.word.diff-facil   { color: #6fdc8c; }
+.word.diff-medio   { color: #f5d259; }
+.word.diff-dificil { color: #ff7b7b; }
+.word.saved {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.word.saved-end::after {
+  content: "★";
+  font-size: .5em;
+  vertical-align: super;
+  color: #ffd54f;
+  margin-left: 1px;
+}
+
+/* ---------- Painel ---------- */
+.translation-result .translation.loading { color: var(--muted); font-style: italic; }
+
+.difficulty-row { display: flex; gap: 8px; margin-top: 14px; }
+.diff-btn {
+  flex: 1; padding: 10px; border-radius: 9px;
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  transition: background .15s, color .15s;
+}
+.diff-btn[data-level="facil"]   { --c: #6fdc8c; }
+.diff-btn[data-level="medio"]   { --c: #f5d259; }
+.diff-btn[data-level="dificil"] { --c: #ff7b7b; }
+.diff-btn:hover { border-color: var(--c); }
+.diff-btn.active { background: var(--c); border-color: var(--c); color: #111; font-weight: bold; }
+
+.secondary-button.is-saved { background: #3a3320; color: #ffd54f; }
+
+/* ---------- Cartões ---------- */
+.phrase-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+.phrase-card h2 { margin: 0 0 6px; font-size: 18px; }
+.phrase-card p { color: var(--muted); margin: 6px 0; }
+.phrase-card.lvl-facil   { border-left: 4px solid #6fdc8c; }
+.phrase-card.lvl-medio   { border-left: 4px solid #f5d259; }
+.phrase-card.lvl-dificil { border-left: 4px solid #ff7b7b; }
+.phrase-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.badge { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: var(--card-2); color: var(--muted); }
