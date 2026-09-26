@@ -53,6 +53,15 @@ COVERS_DIR.mkdir(parents=True, exist_ok=True)
 app = FastAPI(title="Leitor Francês Contextual")
 app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 
+@app.middleware("http")
+async def no_cache_static(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
 ALLOWED_TAGS = [
     "p", "div", "span", "em", "i", "strong", "b", "br",
     "h1", "h2", "h3", "h4", "h5", "h6",
