@@ -1,21 +1,15 @@
-import argostranslate.package
+import argostranslate.package as pkg
 
-argostranslate.package.update_package_index()
-packages = argostranslate.package.get_available_packages()
+pkg.update_package_index()
+available = pkg.get_available_packages()
 
-model = next(
-    (
-        package
-        for package in packages
-        if package.from_code == "fr" and package.to_code == "pt"
-    ),
-    None,
-)
+def install(f, t):
+    p = next((x for x in available if x.from_code == f and x.to_code == t), None)
+    if p:
+        pkg.install_from_path(p.download())
+    return p is not None
 
-if model is None:
-    raise RuntimeError("Modelo Argos Translate francês -> português não encontrado.")
-
-download_path = model.download()
-argostranslate.package.install_from_path(download_path)
-
-print("Modelo francês -> português instalado com sucesso.")
+if not install("fr", "pt"):
+    if not (install("fr", "en") and install("en", "pt")):
+        raise RuntimeError("Modelos fr→pt (ou fr→en→pt) não encontrados.")
+print("Modelos instalados.")
