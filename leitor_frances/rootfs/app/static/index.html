@@ -2,23 +2,17 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Leitor Francês</title>
   <link rel="stylesheet" href="./static/style.css" />
 </head>
-
 <body>
   <header class="topbar">
     <button id="btn-home" class="icon-button" title="Biblioteca">☰</button>
-
     <div class="topbar-title">
       <strong id="book-title">Leitor Francês</strong>
       <small id="book-subtitle">Biblioteca</small>
     </div>
-
     <button id="btn-phrases" class="icon-button" title="Expressões salvas">★</button>
   </header>
 
@@ -26,32 +20,25 @@
     <section id="library-view" class="view active">
       <div class="hero">
         <h1>Biblioteca</h1>
-        <p>Leia em francês, compreenda expressões e salve seu progresso.</p>
-
+        <p id="greeting">Leia em francês, compreenda expressões e salve seu progresso.</p>
         <label class="upload-button">
           <input id="epub-upload" type="file" accept=".epub,application/epub+zip" />
           ＋ Adicionar EPUB
         </label>
       </div>
-
       <div id="upload-status" class="status"></div>
-      <div id="book-list" class="book-list"></div>
+      <div id="book-list" class="book-grid"></div>
     </section>
 
     <section id="reader-view" class="view">
       <div class="reader-toolbar">
         <select id="chapter-select"></select>
-
         <div class="progress-wrap">
-          <div class="progress-bar">
-            <div id="progress-fill"></div>
-          </div>
+          <div class="progress-bar"><div id="progress-fill"></div></div>
           <small id="progress-label">0%</small>
         </div>
       </div>
-
       <article id="reader-content" class="reader-content"></article>
-
       <div class="reader-navigation">
         <button id="prev-chapter">← Capítulo anterior</button>
         <button id="next-chapter">Próximo capítulo →</button>
@@ -66,7 +53,6 @@
         </div>
         <button id="btn-close-phrases" class="icon-button">×</button>
       </div>
-
       <div id="phrase-list" class="phrase-list"></div>
     </section>
   </main>
@@ -84,10 +70,6 @@
       <button id="add-word">+ palavra</button>
     </div>
 
-    <button id="translate-button" class="primary-button">
-      Traduzir localmente
-    </button>
-
     <label class="context-toggle">
       <input id="context-toggle" type="checkbox" />
       Traduzir também a frase de contexto
@@ -95,13 +77,16 @@
 
     <div id="translation-result" class="translation-result"></div>
 
-    <button id="save-phrase-button" class="secondary-button" disabled>
-      ★ Salvar cartão
-    </button>
+    <div class="difficulty-row">
+      <button class="diff-btn" data-level="facil">Fácil</button>
+      <button class="diff-btn" data-level="medio">Médio</button>
+      <button class="diff-btn" data-level="dificil">Difícil</button>
+    </div>
+
+    <button id="save-phrase-button" class="secondary-button" disabled>★ Salvar cartão</button>
   </aside>
 
   <div id="overlay" class="overlay hidden"></div>
-
   <script src="./static/app.js"></script>
 </body>
 </html>
