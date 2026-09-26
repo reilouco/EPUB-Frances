@@ -17,12 +17,20 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 
 # torch CPU-only (evita baixar vários GB de CUDA)
-RUN pip install --extra-index-url https://download.pytorch.org/whl/cpu \
-      torch && \
+RUN pip install --index-url https://download.pytorch.org/whl/cpu torch && \
     pip install -r /app/requirements.txt
 
-COPY build_argos_model.py build_kokoro_model.py /app/
-RUN python /app/build_argos_model.py && python /app/build_kokoro_model.py
+# Modelo de tradução (Argos)
+COPY build_argos_model.py /app/
+RUN python /app/build_argos_model.py
+
+# Modelo de voz (Kokoro): se o download falhar, o build continua
+# e o modelo é baixado no primeiro uso
+RUN python -c "from kokoro import KPipeline; \
+p = KPipeline(lang_code='f', repo_id='hexgrad/Kokoro-82M'); \
+[None for _ in p('Bonjour.', voice='ff_siwis')]; \
+print('Kokoro pronto.')" \
+    || echo 'AVISO: Kokoro não pré-carregado; será baixado no primeiro uso.'
 
 COPY rootfs/app /app
 COPY run.sh /run.sh
