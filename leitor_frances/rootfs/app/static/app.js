@@ -654,6 +654,37 @@ async function start() {
   await loadBooks();
 }
 
+/* ---------- Tema claro/escuro ---------- */
+const themeButton = $("#theme-toggle");
+const themeIcon = $("#theme-icon");
+
+function updateThemeButton() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  themeIcon.textContent = dark ? "☀" : "☾";
+  themeButton.setAttribute("aria-pressed", String(dark));
+  themeButton.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
+  themeButton.title = dark ? "Ativar modo claro" : "Ativar modo escuro";
+
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) themeColor.content = dark ? "#101715" : "#f7f8f6";
+}
+
+themeButton.addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+
+  try {
+    localStorage.setItem("leitor-frances-theme", next);
+  } catch (_) {
+    // O tema continua funcionando nesta sessão se o armazenamento estiver indisponível.
+  }
+
+  updateThemeButton();
+});
+
+updateThemeButton();
+
+
 start().catch((e) => {
   $("#book-list").innerHTML = `<div class="empty-card"><h2>Erro ao iniciar</h2>
     <p>${escapeHtml(e.message)}</p></div>`;
