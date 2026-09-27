@@ -3,76 +3,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f8f6" />
   <title>Leitor Francês</title>
-  <link rel="stylesheet" href="./static/style.css?v=1.2.3" />
+
+  <script>
+    (() => {
+      try {
+        const saved = localStorage.getItem("leitor-frances-theme");
+        document.documentElement.dataset.theme =
+          saved === "light" || saved === "dark"
+            ? saved
+            : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      } catch (_) {
+        document.documentElement.dataset.theme =
+          matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+    })();
+  </script>
+
+  <link rel="stylesheet" href="./static/style.css?v=2.0.0" />
 </head>
 <body>
   <header class="topbar">
-    <button id="btn-home" class="icon-button" title="Biblioteca">☰</button>
-    <div class="topbar-title">
-      <strong id="book-title">Leitor Francês</strong>
-      <small id="book-subtitle">Biblioteca</small>
+    <div class="topbar-inner">
+      <button id="btn-home" class="icon-button" type="button"
+        title="Ir para a biblioteca" aria-label="Ir para a biblioteca">⌂</button>
+
+      <div class="topbar-title">
+        <strong id="book-title">Leitor Francês</strong>
+        <small id="book-subtitle">Biblioteca</small>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="theme-toggle" class="icon-button" type="button"
+          aria-label="Alternar tema" title="Alternar tema">
+          <span id="theme-icon" aria-hidden="true">☾</span>
+        </button>
+        <button id="btn-phrases" class="icon-button" type="button"
+          title="Expressões salvas" aria-label="Expressões salvas">☆</button>
+      </div>
     </div>
-    <button id="btn-phrases" class="icon-button" title="Expressões salvas">★</button>
   </header>
 
   <main>
     <section id="library-view" class="view active">
       <div class="hero">
-        <h1>Biblioteca</h1>
-        <p id="greeting">Leia em francês, compreenda expressões e salve seu progresso.</p>
+        <div class="hero-copy">
+          <span class="eyebrow">SEU ESPAÇO DE LEITURA</span>
+          <h1>Biblioteca<span class="accent-dot">.</span></h1>
+          <p id="greeting">Leia em francês, compreenda expressões e salve seu progresso.</p>
+        </div>
+
         <label class="upload-button">
           <input id="epub-upload" type="file" accept=".epub,application/epub+zip" />
-          ＋ Adicionar EPUB
+          <span aria-hidden="true">＋</span> Adicionar EPUB
         </label>
       </div>
-      <div id="upload-status" class="status"></div>
+
+      <div id="upload-status" class="status" role="status" aria-live="polite"></div>
       <div id="book-list" class="book-grid"></div>
     </section>
 
     <section id="reader-view" class="view">
       <div class="reader-toolbar">
-        <select id="chapter-select"></select>
-        <div class="progress-wrap">
+        <label class="chapter-picker">
+          <span>CAPÍTULO</span>
+          <select id="chapter-select" aria-label="Selecionar capítulo"></select>
+        </label>
+
+        <div class="progress-wrap" aria-label="Progresso da leitura">
+          <div class="progress-caption">
+            <span>PROGRESSO</span>
+            <small id="progress-label">0%</small>
+          </div>
           <div class="progress-bar"><div id="progress-fill"></div></div>
-          <small id="progress-label">0%</small>
         </div>
       </div>
+
       <article id="reader-content" class="reader-content"></article>
+
       <div class="reader-navigation">
-        <button id="prev-chapter">← Capítulo anterior</button>
-        <button id="next-chapter">Próximo capítulo →</button>
+        <button id="prev-chapter" type="button">← Capítulo anterior</button>
+        <button id="next-chapter" type="button">Próximo capítulo →</button>
       </div>
     </section>
 
     <section id="phrases-view" class="view">
       <div class="section-heading">
         <div>
-          <h1>Expressões salvas</h1>
+          <span class="eyebrow">SEU VOCABULÁRIO</span>
+          <h1>Expressões salvas<span class="accent-dot">.</span></h1>
           <p>Seu repertório pessoal de francês.</p>
         </div>
-        <button id="btn-close-phrases" class="icon-button">×</button>
+        <button id="btn-close-phrases" class="icon-button" type="button"
+          title="Voltar" aria-label="Voltar">×</button>
       </div>
+
       <div id="phrase-list" class="phrase-list"></div>
     </section>
   </main>
 
-  <aside id="translation-panel" class="translation-panel hidden">
+  <aside id="translation-panel" class="translation-panel hidden"
+    aria-label="Detalhes da expressão selecionada">
     <div class="panel-head">
-      <strong>Expressão selecionada</strong>
-      <button id="close-panel" class="icon-button">×</button>
+      <div>
+        <span class="eyebrow">LEITURA ATIVA</span>
+        <strong>Expressão selecionada</strong>
+      </div>
+      <button id="close-panel" class="icon-button" type="button"
+        title="Fechar painel" aria-label="Fechar painel">×</button>
     </div>
 
     <div class="expr-row">
       <p id="selected-expression" class="selected-expression"></p>
-      <button id="tts-play" class="icon-button" title="Ouvir em francês">🔊</button>
-      <button id="tts-slow" class="icon-button" title="Ouvir devagar">🐢</button>
+      <button id="tts-play" class="icon-button" type="button"
+        title="Ouvir em francês" aria-label="Ouvir em francês">🔊</button>
+      <button id="tts-slow" class="icon-button" type="button"
+        title="Ouvir devagar" aria-label="Ouvir devagar">🐢</button>
     </div>
 
-
     <div class="expression-controls">
-      <button id="remove-word">− palavra</button>
-      <button id="add-word">+ palavra</button>
+      <button id="remove-word" type="button">− palavra</button>
+      <button id="add-word" type="button">+ palavra</button>
     </div>
 
     <label class="context-toggle">
@@ -80,32 +132,34 @@
       Traduzir também a frase de contexto
     </label>
 
-    <div id="translation-result" class="translation-result"></div>
+    <div id="translation-result" class="translation-result" aria-live="polite"></div>
 
     <div id="translation-edit" class="translation-edit hidden">
-      <textarea id="translation-input" rows="2"></textarea>
+      <textarea id="translation-input" rows="2" aria-label="Corrigir tradução"></textarea>
       <small>A correção vale para todos da casa e atualiza os cartões salvos.</small>
       <div class="edit-actions">
-        <button id="tr-cancel">Cancelar</button>
-        <button id="tr-save" class="primary-button">Salvar correção</button>
+        <button id="tr-cancel" type="button">Cancelar</button>
+        <button id="tr-save" class="primary-button" type="button">Salvar correção</button>
       </div>
     </div>
 
-
+    <div class="panel-section-label">NÍVEL DE DIFICULDADE</div>
     <div class="difficulty-row">
-      <button class="diff-btn" data-level="facil">Fácil</button>
-      <button class="diff-btn" data-level="medio">Médio</button>
-      <button class="diff-btn" data-level="dificil">Difícil</button>
+      <button class="diff-btn" data-level="facil" type="button">Fácil</button>
+      <button class="diff-btn" data-level="medio" type="button">Médio</button>
+      <button class="diff-btn" data-level="dificil" type="button">Difícil</button>
     </div>
 
     <textarea id="note-input" class="note-input" rows="2"
-      placeholder="📝 Nota pessoal (salva junto com o cartão)"></textarea>
+      placeholder="Nota pessoal (salva junto com o cartão)"
+      aria-label="Nota pessoal"></textarea>
 
-
-    <button id="save-phrase-button" class="secondary-button" disabled>★ Salvar cartão</button>
+    <button id="save-phrase-button" class="secondary-button" type="button" disabled>
+      ★ Salvar cartão
+    </button>
   </aside>
 
   <div id="overlay" class="overlay hidden"></div>
-  <script src="./static/app.js?v=1.2.3"></script>
+  <script src="./static/app.js?v=2.0.0"></script>
 </body>
 </html>
