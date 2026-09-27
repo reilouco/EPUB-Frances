@@ -8,21 +8,72 @@
 
   <script>
     (() => {
+      const preferredTheme = () => {
+        try {
+          return matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        } catch (_) {
+          return "light";
+        }
+      };
+
       try {
         const saved = localStorage.getItem("leitor-frances-theme");
         document.documentElement.dataset.theme =
           saved === "light" || saved === "dark"
             ? saved
-            : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            : preferredTheme();
       } catch (_) {
-        document.documentElement.dataset.theme =
-          matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = preferredTheme();
       }
     })();
   </script>
 
-  <link rel="stylesheet" href="./static/style.css?v=2.0.2" />
+  <link rel="stylesheet" href="./static/style.css?v=2.0.3" />
+
+  <style>
+    /* Mantém o rodapé separado dos livros mesmo se o WebView usar CSS antigo. */
+    #library-view .library-footer {
+      display: block;
+      clear: both;
+      margin-top: 64px;
+      padding: 20px 0 calc(32px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border, #34433a);
+      color: var(--muted, #a5b5aa);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    #library-view .version-details {
+      max-width: 100%;
+    }
+
+    #library-view .version-details summary {
+      display: list-item;
+      width: fit-content;
+      padding: 6px 0;
+      cursor: pointer;
+    }
+
+    #library-view .version-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      margin-top: 8px;
+    }
+
+    #library-view .version-info span {
+      display: inline-block;
+    }
+
+    #library-view .version-info strong {
+      color: var(--text, inherit);
+      font-weight: 600;
+    }
+  </style>
 </head>
+
 <body>
   <header class="topbar">
     <div class="topbar-inner">
@@ -62,11 +113,12 @@
 
       <div id="upload-status" class="status" role="status" aria-live="polite"></div>
       <div id="book-list" class="book-grid"></div>
+
       <footer class="library-footer">
         <details class="version-details">
           <summary>Versões</summary>
           <div class="version-info">
-            <span>Interface: <strong>2.0.2</strong></span>
+            <span>Interface: <strong>2.0.3</strong></span>
             <span>JavaScript: <strong id="version-js">—</strong></span>
             <span>Estilos: <strong id="version-css">—</strong></span>
           </div>
@@ -170,6 +222,31 @@
   </aside>
 
   <div id="overlay" class="overlay hidden"></div>
-  <script src="./static/app.js?v=2.0.2"></script>
+
+  <script src="./static/app.js?v=2.0.3"></script>
+  <script>
+    /* Preenche o rodapé mesmo se uma versão anterior do app.js estiver em cache. */
+    (() => {
+      function versionFrom(selector, attribute) {
+        const element = document.querySelector(selector);
+        const address = element && element.getAttribute(attribute);
+
+        if (!address) return "não identificada";
+
+        try {
+          return new URL(address, document.baseURI).searchParams.get("v")
+            || "sem versão";
+        } catch (_) {
+          return "não identificada";
+        }
+      }
+
+      document.getElementById("version-js").textContent =
+        versionFrom('script[src*="static/app.js"]', "src");
+
+      document.getElementById("version-css").textContent =
+        versionFrom('link[href*="static/style.css"]', "href");
+    })();
+  </script>
 </body>
 </html>
