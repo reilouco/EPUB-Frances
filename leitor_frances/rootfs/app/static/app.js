@@ -1,3 +1,5 @@
+window.LEITOR_JS_BUILD = "2.0.3";
+
 const state = {
   book: null,
   chapterIndex: 0,
