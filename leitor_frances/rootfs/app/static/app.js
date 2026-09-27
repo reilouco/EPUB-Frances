@@ -735,6 +735,21 @@ themeButton.addEventListener("click", (event) => {
 
 updateThemeButton();
 
+/* ---------- Versões dos arquivos carregados ---------- */
+function assetVersion(selector) {
+  const element = document.querySelector(selector);
+  const url = element?.src || element?.href;
+  if (!url) return "não identificada";
+
+  try {
+    return new URL(url, document.baseURI).searchParams.get("v") || "sem versão";
+  } catch (_) {
+    return "não identificada";
+  }
+}
+
+$("#version-js").textContent = assetVersion('script[src*="static/app.js"]');
+$("#version-css").textContent = assetVersion('link[href*="static/style.css"]');
 
 start().catch((e) => {
   $("#book-list").innerHTML = `<div class="empty-card"><h2>Erro ao iniciar</h2>
