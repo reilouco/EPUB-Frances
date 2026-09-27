@@ -874,3 +874,40 @@ body {
     letter-spacing: .1em;
   }
 }
+
+/* Versões — exibidas somente na Biblioteca */
+.library-footer {
+  margin-top: 56px;
+  padding: 18px 0 calc(24px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.version-details {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.version-details summary {
+  cursor: pointer;
+  width: fit-content;
+  padding: 6px 0;
+}
+
+.version-details summary:hover {
+  color: var(--accent);
+}
+
+.version-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.version-info strong {
+  color: var(--text);
+  font-weight: 600;
+}
