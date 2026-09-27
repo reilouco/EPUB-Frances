@@ -1,5 +1,5 @@
 name: Leitor Francês Contextual
-version: "2.0.0"
+version: "2.0.1"
 slug: leitor_frances
 description: >-
   Leitor de livros EPUB em francês integrado ao Home Assistant.
