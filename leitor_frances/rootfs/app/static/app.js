@@ -11,6 +11,8 @@ const state = {
   trTimer: null,
   saveTimer: null,
   noteTimer: null,
+  panelScrollY: null,
+  panelScrollPercent: null,
 };
 
 const $ = (s) => document.querySelector(s);
@@ -236,8 +238,21 @@ function selectWord(el) {
     : words.slice(index, Math.min(index + 3, words.length));
   state.selectedContext = words.map((w) => w.textContent).join(" ");
 
+  if (state.panelScrollY === null) {
+    state.panelScrollPercent = currentScrollPercent();
+    state.panelScrollY = window.scrollY;
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${state.panelScrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+  }
+
   $("#translation-panel").classList.remove("hidden");
   $("#overlay").classList.remove("hidden");
+  $("#translation-panel").scrollTop = 0;
+
   updateSelectionUI();
 }
 
@@ -451,13 +466,31 @@ async function toggleSaved() {
 function closePanel() {
   $("#translation-panel").classList.add("hidden");
   $("#overlay").classList.add("hidden");
-  document.querySelectorAll(".word.selected").forEach((w) => w.classList.remove("selected"));
+
+  if (state.panelScrollY !== null) {
+    const scrollY = state.panelScrollY;
+    state.panelScrollY = null;
+    state.panelScrollPercent = null;
+
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+
+    window.scrollTo(0, scrollY);
+  }
+
+  document.querySelectorAll(".word.selected").forEach((w) =>
+    w.classList.remove("selected"));
+
   clearTimeout(state.trTimer);
   closeEdit();
   state.trSeq++;
   state.selectedWords = [];
   state.translation = null;
 }
+
 
 /* ---------- Capítulos e progresso ---------- */
 function updateProgressUI(scrollPercent) {
@@ -467,6 +500,10 @@ function updateProgressUI(scrollPercent) {
 }
 
 function currentScrollPercent() {
+  if (state.panelScrollPercent !== null) {
+    return state.panelScrollPercent;
+  }
+
   const max = document.documentElement.scrollHeight - window.innerHeight;
   return max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0;
 }
@@ -660,27 +697,41 @@ const themeIcon = $("#theme-icon");
 
 function updateThemeButton() {
   const dark = document.documentElement.dataset.theme === "dark";
+
+  // Mantém o estado também no body, útil em WebViews que aplicam
+  // estilos próprios ao documento embutido.
+  document.body.dataset.theme = dark ? "dark" : "light";
+
   themeIcon.textContent = dark ? "☀" : "☾";
   themeButton.setAttribute("aria-pressed", String(dark));
-  themeButton.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
+  themeButton.setAttribute(
+    "aria-label",
+    dark ? "Ativar modo claro" : "Ativar modo escuro"
+  );
   themeButton.title = dark ? "Ativar modo claro" : "Ativar modo escuro";
 
   const themeColor = document.querySelector('meta[name="theme-color"]');
-  if (themeColor) themeColor.content = dark ? "#101715" : "#f7f8f6";
+  if (themeColor) {
+    themeColor.content = dark ? "#101715" : "#f7f8f6";
+  }
 }
 
-themeButton.addEventListener("click", () => {
-  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+themeButton.addEventListener("click", (event) => {
+  event.preventDefault();
+
+  const next =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+
   document.documentElement.dataset.theme = next;
+  updateThemeButton();
 
   try {
     localStorage.setItem("leitor-frances-theme", next);
   } catch (_) {
-    // O tema continua funcionando nesta sessão se o armazenamento estiver indisponível.
+    // A troca visual permanece ativa mesmo sem armazenamento.
   }
-
-  updateThemeButton();
 });
+
 
 updateThemeButton();
 
