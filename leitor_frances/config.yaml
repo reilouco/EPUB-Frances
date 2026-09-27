@@ -1,7 +1,12 @@
 name: Leitor Francês Contextual
-version: "1.2.3"
+version: "2.0.0"
 slug: leitor_frances
-description: Leitor EPUB francês com tradução contextual local para português.
+description: >-
+  Leitor de livros EPUB em francês integrado ao Home Assistant.
+  Permite acompanhar o progresso de leitura, selecionar palavras e expressões,
+  obter traduções contextuais locais para português, ouvir a pronúncia,
+  classificar dificuldades, corrigir traduções e criar cartões com notas
+  para revisão do vocabulário.
 url: "https://github.com/reilouco/EPUB-Frances"
 arch:
   - amd64
