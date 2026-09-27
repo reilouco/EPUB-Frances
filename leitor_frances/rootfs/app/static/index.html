@@ -21,7 +21,7 @@
     })();
   </script>
 
-  <link rel="stylesheet" href="./static/style.css?v=2.0.1" />
+  <link rel="stylesheet" href="./static/style.css?v=2.0.2" />
 </head>
 <body>
   <header class="topbar">
@@ -62,6 +62,16 @@
 
       <div id="upload-status" class="status" role="status" aria-live="polite"></div>
       <div id="book-list" class="book-grid"></div>
+      <footer class="library-footer">
+        <details class="version-details">
+          <summary>Versões</summary>
+          <div class="version-info">
+            <span>Interface: <strong>2.0.2</strong></span>
+            <span>JavaScript: <strong id="version-js">—</strong></span>
+            <span>Estilos: <strong id="version-css">—</strong></span>
+          </div>
+        </details>
+      </footer>
     </section>
 
     <section id="reader-view" class="view">
@@ -160,6 +170,6 @@
   </aside>
 
   <div id="overlay" class="overlay hidden"></div>
-  <script src="./static/app.js?v=2.0.1"></script>
+  <script src="./static/app.js?v=2.0.2"></script>
 </body>
 </html>
