@@ -15,6 +15,7 @@
   --easy: #217d4c;
   --medium: #996000;
   --hard: #b94040;
+  --lf-css-build: "2.0.3";
 }
 
 :root[data-theme="dark"] {
