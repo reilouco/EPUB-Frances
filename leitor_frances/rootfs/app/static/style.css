@@ -911,3 +911,7 @@ body {
   color: var(--text);
   font-weight: 600;
 }
+
+:root {
+  --leitor-css-version: "2.0.3";
+}
