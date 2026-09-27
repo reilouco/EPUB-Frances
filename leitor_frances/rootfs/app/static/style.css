@@ -703,3 +703,174 @@ main { max-width: 1120px; margin: auto; }
     animation-duration: .01ms !important;
   }
 }
+
+/* Correções de layout para o WebView do Home Assistant */
+
+/* Garante que a escolha manual prevaleça também no body. */
+html[data-theme="light"],
+html[data-theme="light"] body {
+  color-scheme: light;
+  --bg: #f7f8f6;
+  --surface: #ffffff;
+  --surface-alt: #f1f4f1;
+  --text: #18231f;
+  --muted: #65736c;
+  --accent: #16775e;
+  --accent-hover: #105c49;
+  --accent-soft: #e3f3eb;
+  --border: #e1e8e2;
+  --danger: #b94040;
+  --shadow: 0 12px 36px rgba(24, 40, 32, .06);
+  --overlay-color: rgba(12, 25, 19, .42);
+  --easy: #217d4c;
+  --medium: #996000;
+  --hard: #b94040;
+}
+
+html[data-theme="dark"],
+html[data-theme="dark"] body {
+  color-scheme: dark;
+  --bg: #101715;
+  --surface: #19221e;
+  --surface-alt: #222f28;
+  --text: #eef4ee;
+  --muted: #a5b5aa;
+  --accent: #72d6a6;
+  --accent-hover: #90e5bc;
+  --accent-soft: #203b2e;
+  --border: #34433a;
+  --danger: #ff9393;
+  --shadow: 0 16px 44px rgba(0, 0, 0, .18);
+  --overlay-color: rgba(0, 0, 0, .64);
+  --easy: #83dca4;
+  --medium: #f5ca77;
+  --hard: #ff9999;
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* Impede que o título longo empurre os botões para fora da tela. */
+.topbar-title,
+.topbar-actions {
+  min-width: 0;
+}
+
+/* O rótulo deve ocupar sua própria linha, nunca disputar espaço
+   com o resultado da tradução ou com os botões. */
+.panel-section-label {
+  display: block;
+  clear: both;
+  margin: 22px 0 0;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.difficulty-row {
+  margin-top: 10px;
+}
+
+/* Rolagem independente do painel, inclusive no WebView do iOS. */
+.translation-panel {
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+
+.panel-head {
+  position: sticky;
+  top: -22px;
+  z-index: 2;
+  min-height: 48px;
+  padding: 6px 0 10px;
+  background: var(--surface);
+}
+
+/* Evita que parágrafos extensos alarguem o painel. */
+.translation-result,
+.translation-result details,
+.translation-result details p,
+.translation-result .translation,
+.translation-result .translation span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  /* Barra interna do leitor mais compacta. */
+  .topbar-inner {
+    gap: 5px;
+    min-height: 48px;
+    padding: 3px 10px;
+  }
+
+  .topbar-actions {
+    flex: 0 0 auto;
+    gap: 1px;
+  }
+
+  .topbar .icon-button {
+    width: 36px;
+    height: 40px;
+    font-size: 21px;
+  }
+
+  .topbar-title strong {
+    font-size: 13px;
+  }
+
+  .topbar-title small {
+    margin-top: 1px;
+    font-size: 11px;
+  }
+
+  .reader-toolbar {
+    top: 48px;
+  }
+
+  /* O painel ocupa apenas a área disponível para o frontend
+     dentro do aplicativo HA e rola independentemente do livro. */
+  .translation-panel {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    height: 100vh;  /* fallback para WebViews antigos */
+    height: 100dvh;
+    margin: 0;
+    padding: 12px 18px calc(20px + env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+
+  .panel-head {
+    top: -12px;
+    margin-bottom: 8px;
+    padding: 8px 0 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-head .eyebrow {
+    display: block;
+    line-height: 1.4;
+  }
+
+  .panel-head strong {
+    margin-top: 3px;
+    line-height: 1.3;
+  }
+
+  .panel-section-label {
+    margin-top: 24px;
+    font-size: 11px;
+    line-height: 1.5;
+    letter-spacing: .1em;
+  }
+}
